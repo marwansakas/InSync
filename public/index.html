@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>The Mind Online</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; background: #1a1a1a; color: white; padding-top: 30px; }
+        button { padding: 10px 20px; font-size: 18px; cursor: pointer; background: #6200ea; color: white; border: none; border-radius: 5px; margin: 5px; }
+        .card { background: #ff9800 !important; font-size: 30px !important; padding: 20px 30px !important; }
+        input { padding: 10px; font-size: 16px; border-radius: 5px; border: none; text-align: center; }
+        
+        #corner-tracker {
+            display: none; position: fixed; top: 20px; right: 20px; background: #333;
+            padding: 15px 25px; border-radius: 8px; font-size: 20px; font-weight: bold;
+            border: 2px solid #ff1744; box-shadow: 0px 4px 10px rgba(0,0,0,0.5);
+        }
+
+        #host-settings { display: none; background: #222; padding: 15px; border-radius: 5px; margin: 20px auto; width: 300px; border: 1px solid #444; }
+        
+        /* NEW: Dashboard for showing who has how many cards */
+        #player-dashboard { background: #222; padding: 15px; border-radius: 5px; margin: 20px auto; width: 300px; border: 1px solid #444; text-align: left; }
+        #player-list { list-style-type: none; padding: 0; margin: 0; }
+        #player-list li { padding: 8px 0; border-bottom: 1px solid #444; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <div id="corner-tracker">LIVES: <span id="lives-num" style="color: #ff1744;">3</span></div>
+
+    <h1>The Mind Online</h1>
+    
+    <div id="lobby">
+        <!-- NEW: Username Input -->
+        <input type="text" id="username" placeholder="Enter Your Name" style="margin-bottom: 20px;"><br>
+        
+        <button onclick="createRoom()">Create New Game</button>
+        <hr style="width: 300px; border-color: #444;">
+        <input type="text" id="roomCode" placeholder="Enter Room Code">
+        <button onclick="joinRoom()">Join Game</button>
+    </div>
+
+    <div id="game-area" style="display:none;">
+        <h2 id="display-code"></h2>
+        <p id="player-count-display" style="color:#aaa;">Players in room: 1</p>
+        
+        <!-- NEW: Player Status Board -->
+        <div id="player-dashboard">
+            <h3 style="margin-top:0; color:#00e5ff; text-align: center;">Players & Cards</h3>
+            <ul id="player-list"></ul>
+        </div>
+        
+        <div id="host-settings">
+            <label style="font-weight: bold; color: #ff9800;">Max Card Number: </label><br><br>
+            <input type="number" id="custom-range" value="100" max="1000">
+            <p id="min-warning" style="font-size: 12px; color: #aaa;">Minimum allowed: 100</p>
+        </div>
+
+        <div id="status-message" style="color: #ff9800; height: 30px; margin-bottom: 10px; font-size: 20px;"></div>
+
+        <button id="start-btn" onclick="startGame()" style="display:none;">START LEVEL 1</button>
+        <div id="my-hand" style="margin-top:20px;"></div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let currentRoomCode = "";
+        let isHost = false;
+
+        function getUsername() {
+            const name = document.getElementById('username').value.trim();
+            if (!name) { alert("Please enter your name first!"); return null; }
+            return name;
+        }
+
+        function createRoom() {
+            const name = getUsername();
+            if (name) socket.emit('create_room', { username: name });
+        }
+
+        function joinRoom() {
+            const name = getUsername();
+            const code = document.getElementById('roomCode').value.toUpperCase();
+            if (name && code) {
+                currentRoomCode = code;
+                socket.emit('join_room', { code: code, username: name });
+            }
+        }
+
+        function startGame() {
+            const rangeVal = document.getElementById('custom-range').value;
+            socket.emit('start_game', { roomCode: currentRoomCode, customRange: rangeVal });
+        }
+
+        socket.on('room_created', (code) => {
+            currentRoomCode = code;
+            isHost = true;
+            showGameArea(code);
+        });
+
+        // NEW: This single listener handles joining, counting, and the dashboard!
+        socket.on('update_players', (players) => {
+            // Show screen for guests who just joined
+            if (!isHost && document.getElementById('game-area').style.display === 'none') {
+                showGameArea(currentRoomCode);
+            }
+
+            document.getElementById('player-count-display').innerText = "Players in room: " + players.length;
+            
+            // Host min-range math
+            const minAllowed = Math.ceil(players.length / 4) * 100;
+            document.getElementById('min-warning').innerText = "Minimum allowed for " + players.length + " players: " + minAllowed;
+            document.getElementById('custom-range').min = minAllowed;
+            if (parseInt(document.getElementById('custom-range').value) < minAllowed) {
+                document.getElementById('custom-range').value = minAllowed;
+            }
+
+            // Update the Dashboard list
+            const list = document.getElementById('player-list');
+            list.innerHTML = "";
+            players.forEach(p => {
+                const li = document.createElement('li');
+                // Adds a little card emoji next to the count
+                li.innerText = `${p.name}: 🎴 ${p.cards}`;
+                list.appendChild(li);
+            });
+        });
+
+        function showGameArea(code) {
+            document.getElementById('lobby').style.display = 'none';
+            document.getElementById('game-area').style.display = 'block';
+            document.getElementById('corner-tracker').style.display = 'block';
+            document.getElementById('display-code').innerText = "Room: " + code;
+            if (isHost) {
+                document.getElementById('start-btn').style.display = 'inline-block';
+                document.getElementById('host-settings').style.display = 'block';
+            }
+        }
+
+        socket.on('game_started', (data) => {
+            document.getElementById('start-btn').style.display = 'none';
+            document.getElementById('host-settings').style.display = 'none'; 
+            document.getElementById('lives-num').innerText = data.lives;
+            document.getElementById('status-message').innerText = "Level " + data.level + " Started!";
+            document.getElementById('status-message').style.color = "white";
+            
+            const handDiv = document.getElementById('my-hand');
+            handDiv.innerHTML = "<h3>Your Cards:</h3>";
+            
+            data.hand.forEach(cardValue => {
+                const cardBtn = document.createElement('button');
+                cardBtn.className = "card";
+                cardBtn.innerText = cardValue;
+                cardBtn.onclick = () => {
+                    socket.emit('play_card', { roomCode: currentRoomCode, value: cardValue });
+                    cardBtn.remove();
+                };
+                handDiv.appendChild(cardBtn);
+            });
+        });
+
+        socket.on('card_played', (data) => {
+            const statusDiv = document.getElementById('status-message');
+            document.getElementById('lives-num').innerText = data.lives;
+
+            if (!data.success) {
+                statusDiv.innerText = "MISTAKE by " + data.by + "! " + data.value + " played early.";
+                statusDiv.style.color = "#ff1744";
+            } else {
+                statusDiv.innerText = data.by + " played " + data.value + "!";
+                statusDiv.style.color = "#00e5ff";
+            }
+        });
+
+        socket.on('level_complete', (nextLevel) => {
+            document.getElementById('status-message').innerText = "Level Complete! Get ready for Level " + nextLevel;
+            document.getElementById('status-message').style.color = "#4caf50";
+            if (isHost) {
+                document.getElementById('start-btn').style.display = 'inline-block';
+                document.getElementById('start-btn').innerText = "START LEVEL " + nextLevel;
+            }
+        });
+
+        socket.on('game_over', () => {
+            alert("GAME OVER! You ran out of lives.");
+            location.reload(); 
+        });
+
+        socket.on('error', (msg) => { alert(msg); });
+    </script>
+</body>
+</html>
