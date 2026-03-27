@@ -1,6 +1,6 @@
 # The Mind Online 🧠🃏
 
-**🎮 Want to just play the game? [Click here to play live on Render!](YOUR_RENDER_LINK_HERE)**
+**🎮 Want to just play the game? [Click here to play live on Render!]([YOUR_RENDER_LINK_HERE](https://insync-an9d.onrender.com))**
 
 ---
 
