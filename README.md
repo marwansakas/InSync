@@ -1,41 +1,72 @@
-# The Mind Online 🧠🃏
+# InSync
 
-**🎮 Want to just play the game? [Click here to play live on Render!](https://insync-an9d.onrender.com)**
+InSync is a real-time multiplayer web game inspired by *The Mind*. It helps small groups play a cooperative timing-and-ordering card game in the browser, with rooms, shared lives, custom deck ranges, and synchronized state updates over Socket.IO.
 
----
+Live demo: https://insync-an9d.onrender.com
 
-A real-time, web-based multiplayer adaptation of the popular cooperative card game, *The Mind*. Players must work together to play their cards in ascending order without communicating. 
+## Tech Stack
 
-## 🌟 Features
+- Node.js
+- Express
+- Socket.IO
+- Vanilla HTML, CSS, and browser JavaScript
 
-* **Real-Time Multiplayer:** Instant card playing and state syncing powered by WebSockets.
-* **Room-Based Matchmaking:** Easily play with friends by generating and sharing a unique 4-letter room code.
-* **Host Controls:** The room creator can start the game and set custom maximum deck ranges (up to 1000).
-* **Dynamic Deck Scaling:** The game automatically calculates the minimum allowed card range based on the number of players connected.
-* **Live Dashboard:** Track how many cards each player has left in their hand in real-time.
-* **Life Tracking:** The team shares 3 lives. Making a mistake costs a life, but the game continues until lives run out!
+## Features
 
-## 🛠️ Tech Stack
+- Create or join multiplayer rooms with a short room code.
+- Host-controlled game start and maximum deck range.
+- Level-based dealing where each player receives more cards each round.
+- Shared life counter for team mistakes.
+- Real-time player list, card count, and center-pile updates.
 
-* **Backend:** Node.js, Express.js
-* **Real-Time Engine:** Socket.io
-* **Frontend:** Vanilla HTML, CSS, and JavaScript
+## Quick Start
 
-## 📜 How to Play
+Install dependencies:
 
-1. Enter your name and **Create** or **Join** a room.
-2. The game is played in levels. In Level 1, everyone gets 1 card. In Level 2, everyone gets 2 cards, and so on.
-3. **No talking!** You must play your cards in ascending order to the center of the table.
-4. If someone plays a card out of turn (meaning someone else had a lower card in their hand), the team loses a life, and the mistakenly played card is discarded. 
-5. Survive as many levels as you can before your 3 lives run out!
+```bash
+npm install
+```
 
----
+Run locally:
 
-## 💻 Developer Instructions (Running Locally)
+```bash
+npm start
+```
 
-*(The instructions below are for developers who want to download and modify the source code).*
+Open the app at:
 
-1. **Clone the repository:**
-   ```bash
-   git clone [https://github.com/marwansakas/the-mind-online.git](https://github.com/marwansakas/the-mind-online.git)
-   cd the-mind-online
+```text
+http://localhost:3000
+```
+
+Run the repository smoke test:
+
+```bash
+npm test
+```
+
+## Environment Notes
+
+The app stores rooms in memory. Restarting the Node process clears all active rooms and games. No `.env` file is required for local development.
+
+## How to Play
+
+1. Enter a player name.
+2. Create a room or join an existing room code.
+3. The host starts the game.
+4. Players try to play cards in ascending order without table talk.
+5. A lower hidden card remaining in another player's hand costs the team one life.
+6. The team advances through levels until it runs out of lives.
+
+## Project Structure
+
+- `server.js`: Express server, Socket.IO room management, dealing, turn validation, and level progression.
+- `public/index.html`: Browser client UI, room controls, and Socket.IO client handlers.
+- `package.json`: Root scripts and runtime dependencies.
+- `tests/`: Smoke tests that verify important server/client source markers.
+- `docs/`: Architecture and maintenance notes.
+
+## Demo / Walkthrough
+
+Use the Render demo for a hosted walkthrough, or run the app locally and open two browser windows to simulate two players joining the same room.
+
